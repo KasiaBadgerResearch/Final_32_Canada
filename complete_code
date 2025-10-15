@@ -1,0 +1,51 @@
+# How have Canada’s terrestrial protected areas evolved relative to marine protected areas between 2014 and 2024?
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+# Folders
+data_raw_folder = "data_raw/"
+data_clean_folder = "data_clean/"
+figures_folder = "figures/"
+
+# Load CSV
+filename = "climate-change_can_filtered.csv"  # Filtered dataset with only relevant rows
+df = pd.read_csv(os.path.join(data_raw_folder, filename))
+
+# Keep only needed columns
+df = df[["Year", "Indicator Name", "Value"]]
+
+# Convert Year and Value to numeric, drop invalid rows
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+df = df.dropna(subset=["Year", "Value"])
+
+# Pivot indicators into separate columns
+df_pivot = df.pivot(index="Year", columns="Indicator Name", values="Value").reset_index()
+df_pivot = df_pivot.sort_values("Year")
+
+print("Pivoted Canada dataset:")
+display(df_pivot)
+
+# Interpolate missing values for smooth plotting (optional)
+df_plot = df_pivot.interpolate(method='linear')
+
+# Plot the two indicators
+plt.figure(figsize=(10,6))
+plt.plot(df_plot["Year"], df_plot["Terrestrial protected areas (% of total land area)"], 
+         marker='o', linestyle='-', label="Terrestrial protected areas (% of total land area)")
+plt.plot(df_plot["Year"], df_plot["Marine protected areas (% of territorial waters)"], 
+         marker='o', linestyle='-', label="Marine protected areas (% of territorial waters")
+
+plt.title("Canada: Terrestrial protected areas vs Marine protected areas (2014-2024)")
+plt.xlabel("Year")
+plt.ylabel("Percentage of Total Area")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(os.path.join(figures_folder, "canada_terrestrial_protected_areas_vs_marine_protected_areas.png"))
+plt.show()
+
+# Save cleaned CSV
+df_pivot.to_csv(os.path.join(data_clean_folder, "canada_terrestrial_protected_areas_vs_marine_protected_areas"), index=False)
